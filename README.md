@@ -14,6 +14,6 @@ git clone https://github.com/luigidifraia/STM32CubeMX_Empty_Makefile_Projects.gi
 
 For a quick glance at the clock configuration used to generate projects, please refer to the media folder.
 
-As example, here's the clock configuration for STM32F411CEUx-based projects:
+As an example, here's the clock configuration for STM32F411CEUx-based projects:
 
 ![Clock configuration for STM32F411CEUx-based projects](media/STM32F411CEUx_Clock_Configuration.png)
