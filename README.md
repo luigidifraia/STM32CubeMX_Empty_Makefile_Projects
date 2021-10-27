@@ -2,7 +2,13 @@
 
 This repository provides empty Makefile-based projects created with STM32CubeMX.
 
-To prevent code duplication, the STM32CubeFx material included by STM32CubeMX has been removed from the generated code and made available as a Git submodule.
+To prevent code duplication, the STM32CubeFx material included by STM32CubeMX has been removed from the generated code and made available as a Git submodule. Makefiles have been changed accordingly.
+
+Unless you plan to use earlier versions of the STM32CubeFx material, you can get a shallow clone of the submodule itself with:
+
+```
+git clone https://github.com/luigidifraia/STM32CubeMX_Empty_Makefile_Projects.git --recursive --shallow-submodules
+```
 
 ## Clock configuration
 
