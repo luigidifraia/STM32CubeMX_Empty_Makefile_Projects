@@ -13,7 +13,7 @@
 ######################################
 # target
 ######################################
-TARGET = Blue_Pill_Plus_STM32F103CBTx_Minimal
+TARGET = Blue_Pill_Plus_STM32F103CBTx_Blinky
 
 
 ######################################
