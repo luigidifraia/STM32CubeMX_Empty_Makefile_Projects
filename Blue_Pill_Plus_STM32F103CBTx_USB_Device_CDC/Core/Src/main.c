@@ -22,7 +22,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "usbd_cdc_if.h"
+#include <string.h>   /* memcpy */
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -93,12 +94,50 @@ int main(void)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
 
+  /* Wait for the host to open a terminal before sending the greeting.
+   * cdc_connected goes high when the host asserts DTR (e.g. minicom,
+   * PuTTY, or any other terminal emulator opens the port). */
+  while (!cdc_connected)
+  {
+    /* Optionally toggle the LED here to show we are waiting. */
+  }
+
+  const char *banner = "USBSerial ready\r\n";
+  CDC_WriteBuf((uint8_t *)banner, (uint16_t)strlen(banner));
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    /* --- Example 1: single-character echo (mirrors mbed _getc / _putc) --- */
+#if 0
+    if (cdc_connected && CDC_Available())
+    {
+      int ch = CDC_GetChar();   /* non-blocking here because Available() > 0 */
+      CDC_PutChar(ch);
+    }
+#endif
+
+    /* --- Example 2: block echo (mirrors writeBlock / readEP) ------------- */
+    if (cdc_connected)
+    {
+      uint8_t  rxBuf[64];
+      uint16_t nBytes = CDC_ReadBuf(rxBuf, sizeof(rxBuf));
+
+      if (nBytes > 0U)
+      {
+        /* Echo the block back.  CDC_WriteBuf returns USBD_BUSY if the
+         * previous TX hasn't finished; retry once to keep things simple. */
+        uint8_t result = CDC_WriteBuf(rxBuf, nBytes);
+        if (result == USBD_BUSY)
+        {
+          HAL_Delay(1U);
+          CDC_WriteBuf(rxBuf, nBytes);
+        }
+      }
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
