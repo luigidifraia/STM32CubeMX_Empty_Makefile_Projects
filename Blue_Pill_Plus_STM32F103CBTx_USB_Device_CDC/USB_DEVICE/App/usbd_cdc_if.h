@@ -176,6 +176,17 @@ uint16_t CDC_ReadBuf(uint8_t *buf, uint16_t maxLen);
  */
 uint8_t CDC_WriteBuf(uint8_t *buf, uint16_t len);
 
+/**
+ * @brief  Discard all bytes currently waiting in the RX ring buffer.
+ *
+ * Equivalent to usb_serial_flush_input() on the Teensy / AVR USB serial
+ * library.  Call this immediately after a terminal connects (DTR asserts)
+ * to discard any stale bytes: OS-generated modem "AT command" probes,
+ * leftovers from a previous session, etc., before showing a banner or
+ * entering a command loop.
+ */
+void CDC_FlushInput(void);
+
 /* USER CODE END EXPORTED_FUNCTIONS */
 
 /**
