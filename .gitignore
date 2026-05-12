@@ -1,2 +1,97 @@
-# Build folder
-build
+# =============================================================================
+# .gitignore for STM32CubeMX / STM32CubeIDE — Makefile build
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Build output
+# CubeMX Makefile projects collect everything under build/.
+# -----------------------------------------------------------------------------
+build/
+
+# Loose artefacts that some toolchains drop in the project root
+*.o
+*.d
+*.elf
+*.bin
+*.hex
+*.map
+*.list
+*.su          # GCC stack-usage files (-fstack-usage)
+*.ld.bak
+
+# -----------------------------------------------------------------------------
+# STM32CubeIDE — Eclipse / CDT project metadata
+# Generated when the project folder is opened in the IDE rather than built
+# from the command line.  Not useful to other developers or CI.
+# -----------------------------------------------------------------------------
+.project
+.cproject
+.settings/
+.launches/
+Debug/
+Release/
+
+# -----------------------------------------------------------------------------
+# STM32CubeMX
+# The .ioc file IS the source of truth and must be tracked.
+# Everything below is transient or personal.
+# -----------------------------------------------------------------------------
+
+# CubeMX per-user workspace preferences
+.mxproject
+
+# Backup copies written by CubeMX before regeneration
+*.bak
+*.orig
+
+# -----------------------------------------------------------------------------
+# Compiler / linker temporaries
+# -----------------------------------------------------------------------------
+*.i           # Pre-processed C source
+*.s           # Compiler-generated assembler (not hand-written .s/.S files)
+*.lss         # Extended listing
+
+# -----------------------------------------------------------------------------
+# OpenOCD / GDB debug session artefacts
+# -----------------------------------------------------------------------------
+*.cfg.bak
+openocd.log
+
+# -----------------------------------------------------------------------------
+# Editors and IDEs
+# -----------------------------------------------------------------------------
+
+# Visual Studio Code
+.vscode/
+
+# CLion / JetBrains
+.idea/
+cmake-build-*/
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+\#*\#
+.\#*
+
+# -----------------------------------------------------------------------------
+# Operating system
+# -----------------------------------------------------------------------------
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.fuse_hidden*
+.Trash-*
