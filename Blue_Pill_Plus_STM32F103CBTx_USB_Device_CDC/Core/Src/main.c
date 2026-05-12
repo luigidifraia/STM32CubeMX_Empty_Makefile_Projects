@@ -99,7 +99,13 @@ int main(void)
    * PuTTY, or any other terminal emulator opens the port). */
   while (!cdc_connected)
   {
-    /* Optionally toggle the LED here to show we are waiting. */
+    /* Toggle the LED here to show we are waiting. */
+
+    /* Small delay for animation speed (~2 fps) */
+    HAL_Delay(500);
+
+    /* Toggle onboard LED */
+    HAL_GPIO_TogglePin(On_board_LED_GPIO_Port, On_board_LED_Pin);
   }
 
   const char *banner = "USBSerial ready\r\n";
