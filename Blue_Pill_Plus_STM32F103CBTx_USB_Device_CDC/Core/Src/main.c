@@ -94,56 +94,76 @@ int main(void)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
 
-  /* Wait for the host to open a terminal before sending the greeting.
-   * cdc_connected goes high when the host asserts DTR (e.g. minicom,
-   * PuTTY, or any other terminal emulator opens the port). */
-  while (!cdc_connected)
-  {
-    /* Toggle the LED here to show we are waiting. */
-
-    /* Small delay for animation speed (~2 fps) */
-    HAL_Delay(500);
-
-    /* Toggle onboard LED */
-    HAL_GPIO_TogglePin(On_board_LED_GPIO_Port, On_board_LED_Pin);
-  }
-
-  const char *banner = "USBSerial ready\r\n";
-  CDC_WriteBuf((uint8_t *)banner, (uint16_t)strlen(banner));
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* --- Example 1: single-character echo (mirrors mbed _getc / _putc) --- */
-#if 0
-    if (cdc_connected && CDC_Available())
+    /*
+     * OUTER LOOP: wait for a terminal to connect.
+     * This outer loop means the banner is re-shown every time a terminal
+     * connects, regardless of whether the MCU is USB-powered or running
+     * from an independent supply.
+     */
+
+    /* Wait for a terminal to open (DTR asserted). */
+    while (!cdc_connected)
     {
-      int ch = CDC_GetChar();   /* non-blocking here because Available() > 0 */
-      CDC_PutChar(ch);
+      /* Toggle the on-board LED here to indicate standby. */
+
+      /* Small delay for animation speed (~2 fps) */
+      HAL_Delay(500);
+
+      /* Toggle onboard LED */
+      HAL_GPIO_TogglePin(On_board_LED_GPIO_Port, On_board_LED_Pin);
     }
+
+    /* Discard any stale bytes that arrived before we were ready: OS modem
+     * probes, leftovers from a previous session, etc. */
+    CDC_FlushInput();
+
+    /* Show the banner.  Add your own application greeting here. */
+    const char *banner = "USBSerial ready\r\n";
+    CDC_WriteBuf((uint8_t *)banner, (uint16_t)strlen(banner));
+
+    /*
+     * INNER LOOP: do real work here.
+     * Break out (back to the outer loop) the moment the terminal disconnects.
+     *
+     * Two usage patterns are shown; enable whichever suits your application.
+     */
+    while (cdc_connected)
+    {
+      /* --- Pattern A: single-character echo (CDC_GetChar / CDC_PutChar) -- */
+#if 0
+      if (CDC_Available())
+      {
+        int ch = CDC_GetChar();   /* non-blocking: Available() confirmed > 0 */
+        CDC_PutChar(ch);
+      }
 #endif
 
-    /* --- Example 2: block echo (mirrors writeBlock / readEP) ------------- */
-    if (cdc_connected)
-    {
-      uint8_t  rxBuf[64];
-      uint16_t nBytes = CDC_ReadBuf(rxBuf, sizeof(rxBuf));
-
-      if (nBytes > 0U)
+      /* --- Pattern B: block echo (CDC_ReadBuf / CDC_WriteBuf) ------------ */
       {
-        /* Echo the block back.  CDC_WriteBuf returns USBD_BUSY if the
-         * previous TX hasn't finished; retry once to keep things simple. */
-        uint8_t result = CDC_WriteBuf(rxBuf, nBytes);
-        if (result == USBD_BUSY)
+        uint8_t  rxBuf[64];
+        uint16_t nBytes = CDC_ReadBuf(rxBuf, sizeof(rxBuf));
+
+        if (nBytes > 0U)
         {
-          HAL_Delay(1U);
-          CDC_WriteBuf(rxBuf, nBytes);
+          /* Echo the block back.  Retry once on USBD_BUSY: the TX
+           * endpoint may still be occupied from the previous transfer. */
+          uint8_t result = CDC_WriteBuf(rxBuf, nBytes);
+          if (result == USBD_BUSY)
+          {
+            HAL_Delay(1U);
+            CDC_WriteBuf(rxBuf, nBytes);
+          }
         }
       }
     }
+    /* Terminal disconnected: fall back to the outer loop and wait again. */
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

@@ -436,6 +436,22 @@ uint8_t CDC_WriteBuf(uint8_t *buf, uint16_t len)
     return CDC_Transmit_FS(buf, len);
 }
 
+/**
+ * @brief  Discard all bytes currently waiting in the RX ring buffer.
+ *
+ * Resets the ring buffer to empty by re-initialising its head and tail
+ * indices.  Call this immediately after cdc_connected goes high to discard
+ * any stale bytes that accumulated while no terminal was open — equivalent
+ * to usb_serial_flush_input() in the Teensy / AVR USB serial library.
+ *
+ * Safe to call from main-loop context; circ_buf_init() writes both volatile
+ * indices in a single store each, which is atomic on Cortex-M.
+ */
+void CDC_FlushInput(void)
+{
+    circ_buf_init(&cdc_rx_buf);
+}
+
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
 /**
