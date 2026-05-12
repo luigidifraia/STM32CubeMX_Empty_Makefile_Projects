@@ -119,6 +119,23 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
 
 /**
+ * @brief  Return 1 if the USB device is fully enumerated and configured.
+ *
+ * Reads hUsbDeviceFS.dev_state directly, which is updated by the USB
+ * interrupt on every bus event including physical cable removal.  This
+ * is the STM32 equivalent of usb_configured() in the Teensy / AVR USB
+ * serial library.
+ *
+ * Use this together with cdc_connected to distinguish two disconnect cases:
+ *   - Cable pulled  → CDC_Configured() == 0, cdc_connected may still be 1
+ *   - Terminal closed (DTR dropped, cable still present)
+ *                   → CDC_Configured() == 1, cdc_connected == 0
+ *
+ * @return 1 if configured, 0 otherwise.
+ */
+uint8_t CDC_Configured(void);
+
+/**
  * @brief  Return the number of bytes waiting in the RX ring buffer.
  *
  * Equivalent to USBSerial::available().
@@ -181,11 +198,34 @@ uint8_t CDC_WriteBuf(uint8_t *buf, uint16_t len);
  *
  * Equivalent to usb_serial_flush_input() on the Teensy / AVR USB serial
  * library.  Call this immediately after a terminal connects (DTR asserts)
- * to discard any stale bytes: OS-generated modem "AT command" probes,
- * leftovers from a previous session, etc., before showing a banner or
+ * to discard any stale bytes — OS-generated modem "AT command" probes,
+ * leftovers from a previous session, etc. — before showing a banner or
  * entering a command loop.
  */
 void CDC_FlushInput(void);
+
+/**
+ * @brief  Robust connection test — use this in preference to reading
+ *         cdc_connected directly.
+ *
+ * Returns non-zero only when BOTH of the following are true:
+ *   1. cdc_connected == 1  (host asserted DTR via SET_CONTROL_LINE_STATE)
+ *   2. hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED  (USB stack is up)
+ *
+ * Gating on dev_state catches physical cable removal on independently-
+ * powered boards (e.g. Blue Pill Plus running from 3.3 V / 5 V pins).
+ * When the cable is pulled the D+ line discharges, the USB peripheral
+ * sees a bus-reset / disconnect event and transitions dev_state away from
+ * USBD_STATE_CONFIGURED via the HAL interrupt — even without explicit VBUS
+ * sensing — whereas cdc_connected may remain stale because the host never
+ * gets the chance to send SET_CONTROL_LINE_STATE with DTR = 0.
+ *
+ * Always use CDC_IsConnected() in loop conditions; never test cdc_connected
+ * directly in application code.
+ *
+ * @return  1 if a terminal is open and the USB link is active, 0 otherwise.
+ */
+uint8_t CDC_IsConnected(void);
 
 /* USER CODE END EXPORTED_FUNCTIONS */
 

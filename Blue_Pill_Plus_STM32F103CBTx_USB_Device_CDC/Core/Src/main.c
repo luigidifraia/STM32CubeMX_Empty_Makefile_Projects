@@ -107,8 +107,10 @@ int main(void)
      * from an independent supply.
      */
 
-    /* Wait for a terminal to open (DTR asserted). */
-    while (!cdc_connected)
+    /* Wait for the USB to be configured AND a terminal to open (DTR asserted).
+     * Keeping both conditions separate makes the logic explicit and matches
+     * the Teensy pattern: usb_configured() && (control & USB_SERIAL_DTR). */
+    while (!CDC_Configured() || !cdc_connected)
     {
       /* Toggle the on-board LED here to indicate standby. */
 
@@ -129,11 +131,14 @@ int main(void)
 
     /*
      * INNER LOOP: do real work here.
-     * Break out (back to the outer loop) the moment the terminal disconnects.
+     * Break out (back to the outer loop) on either disconnect condition.
      *
-     * Two usage patterns are shown; enable whichever suits your application.
+     * CDC_Configured() catches a physical cable pull (dev_state leaves
+     * USBD_STATE_CONFIGURED before cdc_connected can be cleared).
+     * cdc_connected catches an orderly terminal close (DTR de-asserted
+     * while the cable remains plugged in).
      */
-    while (cdc_connected)
+    while (CDC_Configured() && cdc_connected)
     {
       /* --- Pattern A: single-character echo (CDC_GetChar / CDC_PutChar) -- */
 #if 0

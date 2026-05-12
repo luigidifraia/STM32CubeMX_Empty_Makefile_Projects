@@ -359,6 +359,25 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
  * ---------------------------------------------------------------------------*/
 
 /**
+ * @brief  Return 1 if the USB device is fully enumerated and configured.
+ *
+ * Reads hUsbDeviceFS.dev_state, which is driven by the USB interrupt on
+ * every bus event — including physical cable removal (USBD_LL_DevDisconnected
+ * walks the state machine back to USBD_STATE_DEFAULT).  This is therefore
+ * reliable for detecting an abrupt cable pull, unlike cdc_connected which
+ * depends on the host sending SET_CONTROL_LINE_STATE and so is never cleared
+ * when the cable is yanked.
+ *
+ * Equivalent to usb_configured() in the Teensy / AVR USB serial library.
+ *
+ * @return 1 if USBD_STATE_CONFIGURED, 0 otherwise.
+ */
+uint8_t CDC_Configured(void)
+{
+    return (hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED) ? 1U : 0U;
+}
+
+/**
  * @brief  Return the number of bytes waiting in the RX ring buffer.
  */
 uint8_t CDC_Available(void)
@@ -386,13 +405,15 @@ int CDC_GetChar(void)
 /**
  * @brief  Send a single byte.
  *
- * Checks cdc_connected before attempting the transfer so that characters
- * are not silently discarded into an unconnected endpoint, matching the
- * guard in USBSerial::_putc().
+ * Guards on both CDC_Configured() and cdc_connected, mirroring the two-
+ * condition check in the Teensy recv_str():
+ *   !usb_configured() || !(usb_serial_get_control() & USB_SERIAL_DTR)
+ * This ensures the function returns immediately on a cable pull even if
+ * cdc_connected is stale.
  */
 int CDC_PutChar(int c)
 {
-    if (!cdc_connected)
+    if (!CDC_Configured() || !cdc_connected)
     {
         return 0;
     }
@@ -425,13 +446,15 @@ uint16_t CDC_ReadBuf(uint8_t *buf, uint16_t maxLen)
  * Equivalent to USBSerial::writeBlock() but without the 64-byte hard cap —
  * the ST USB stack segments larger transfers internally.  Returns USBD_BUSY
  * if the previous transmission has not completed; the caller should retry.
+ * Guards on both CDC_Configured() and cdc_connected for the same reason as
+ * CDC_PutChar().
  */
 uint8_t CDC_WriteBuf(uint8_t *buf, uint16_t len)
 {
-    if (!cdc_connected)
+    if (!CDC_Configured() || !cdc_connected)
     {
-        return USBD_OK;   /* Silently succeed when no terminal is open,
-                           * consistent with CDC_PutChar() behaviour. */
+        return USBD_OK;   /* Silently succeed when not connected, consistent
+                           * with CDC_PutChar() behaviour. */
     }
     return CDC_Transmit_FS(buf, len);
 }
